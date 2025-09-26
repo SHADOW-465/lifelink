@@ -242,9 +242,9 @@ export default function EditProfilePage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Gender</Label>
-                      <Select onValueChange={(value) => updateFormData("gender", value)}>
+                      <Select value={formData.gender} onValueChange={(value) => updateFormData("gender", value)}>
                         <SelectTrigger>
-                          <SelectValue placeholder={formData.gender || "Select gender"} />
+                          <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                         <SelectContent>
                           {genders.map((gender) => (
@@ -257,9 +257,12 @@ export default function EditProfilePage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Blood Type *</Label>
-                      <Select onValueChange={(value) => updateFormData("blood_type", value)}>
+                      <Select
+                        value={formData.blood_type}
+                        onValueChange={(value) => updateFormData("blood_type", value)}
+                      >
                         <SelectTrigger>
-                          <SelectValue placeholder={formData.blood_type || "Select blood type"} />
+                          <SelectValue placeholder="Select blood type" />
                         </SelectTrigger>
                         <SelectContent>
                           {bloodTypes.map((type) => (
@@ -274,9 +277,9 @@ export default function EditProfilePage() {
 
                   <div className="space-y-2">
                     <Label>I am a *</Label>
-                    <Select onValueChange={(value) => updateFormData("user_type", value)}>
+                    <Select value={formData.user_type} onValueChange={(value) => updateFormData("user_type", value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder={formData.user_type || "Select user type"} />
+                        <SelectValue placeholder="Select user type" />
                       </SelectTrigger>
                       <SelectContent>
                         {userTypes.map((type) => (
