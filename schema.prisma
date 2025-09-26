@@ -1,0 +1,174 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// Enum for User roles
+enum Role {
+  DONOR
+  RECIPIENT
+}
+
+/// Enum for Blood Types
+enum BloodType {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
+
+/// Enum for Blood Request Status
+enum RequestStatus {
+  PENDING
+  MATCHED
+  COMPLETED
+  CANCELLED
+}
+
+/// Enum for Urgency Level of Blood Requests
+enum UrgencyLevel {
+  NORMAL
+  URGENT
+  CRITICAL
+}
+
+/// Enum for OTP Verification Status
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+}
+
+/// Enum for Notification Types
+enum NotificationType {
+  NEW_BLOOD_REQUEST
+  REQUEST_MATCHED
+  DONATION_CONFIRMED
+  MESSAGE_RECEIVED
+  GENERAL_ALERT
+}
+
+/// User model with dual-profile support and optional social login
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  password            String?
+  role                Role
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  donorProfile        DonorProfile?
+  recipientProfile    RecipientProfile?
+  notifications       Notification[]
+  sentMessages        Message[] @relation("SentMessages")
+  receivedMessages    Message[] @relation("ReceivedMessages")
+
+  /// Stores the push notification token from services like FCM or APN
+  pushNotificationToken String? @unique
+}
+
+/// Donor-specific profile information
+model DonorProfile {
+  id              String      @id @default(cuid())
+  userId          String      @unique
+  user            User        @relation(fields: [userId], references: [id])
+  firstName       String
+  lastName        String
+  bloodType       BloodType
+  latitude        Float
+  longitude       Float
+  address         String
+  isAvailable     Boolean     @default(true)
+  lastDonation    DateTime?
+  donations       Donation[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+/// Recipient-specific profile information
+model RecipientProfile {
+  id              String          @id @default(cuid())
+  userId          String          @unique
+  user            User            @relation(fields: [userId], references: [id])
+  firstName       String
+  lastName        String
+  bloodType       BloodType
+  latitude        Float
+  longitude       Float
+  address         String
+  bloodRequests   BloodRequest[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+/// Model for blood donation requests
+model BloodRequest {
+  id                  String          @id @default(cuid())
+  recipientProfileId  String
+  recipientProfile    RecipientProfile @relation(fields: [recipientProfileId], references: [id])
+  bloodType           BloodType
+  urgency             UrgencyLevel
+  status              RequestStatus   @default(PENDING)
+  donations           Donation[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+}
+
+/// Model for tracking a donation from a donor to a request
+model Donation {
+  id                  String              @id @default(cuid())
+  donorProfileId      String
+  donorProfile        DonorProfile        @relation(fields: [donorProfileId], references: [id])
+  bloodRequestId      String
+  bloodRequest        BloodRequest        @relation(fields: [bloodRequestId], references: [id])
+  donationDate        DateTime            @default(now())
+  otp                 String?
+  otpStatus           VerificationStatus  @default(PENDING)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+/// Model for partner hospitals
+model Hospital {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  latitude    Float
+  longitude   Float
+  isPriority  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Model for secure in-app messaging
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  recipientId String
+  recipient   User     @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  content     String
+  createdAt   DateTime @default(now())
+  isRead      Boolean  @default(false)
+}
+
+/// Model for logging notifications
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
