@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Heart, Users, Activity, MessageCircle, MapPin } from "lucide-react"
+import { Heart, Users, Activity, MessageCircle, MapPin, Bell } from "lucide-react"
 import Link from "next/link"
 import MapComponent from "@/components/map-component"
 import NotificationSystem from "@/components/notification-system"
@@ -162,6 +162,13 @@ export default async function DashboardPage() {
                 <Link href="/clubs">
                   <Users className="mr-2 h-4 w-4" />
                   Rotaract Clubs
+                </Link>
+              </Button>
+
+              <Button className="w-full justify-start bg-transparent" size="lg" variant="outline" asChild>
+                <Link href="/notifications">
+                  <Bell className="mr-2 h-4 w-4" />
+                  Notifications
                 </Link>
               </Button>
 

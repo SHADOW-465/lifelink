@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Heart } from "lucide-react"
+import { Chrome, Heart } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -32,6 +32,25 @@ export default function LoginPage() {
       })
       if (error) throw error
       router.push("/dashboard")
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "An error occurred")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    const supabase = createClient()
+    setIsLoading(true)
+    setError(null)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      if (error) throw error
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
@@ -85,6 +104,26 @@ export default function LoginPage() {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full h-12 text-base font-semibold"
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+            >
+              <Chrome className="mr-2 h-5 w-5" />
+              Continue with Google
+            </Button>
+
             <div className="mt-6 text-center text-sm">
               {"Don't have an account? "}
               <Link href="/auth/register" className="font-semibold text-primary hover:underline">
