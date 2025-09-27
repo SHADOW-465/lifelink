@@ -1,5 +1,5 @@
 import { redirect, notFound } from "next/navigation"
-import { createRouteHandlerClient } from "@supabase/ssr"
+import { createServerComponentClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,7 @@ interface PageProps {
 export default async function RequestDetailsPage({ params }: PageProps) {
   const { id } = params
   const cookieStore = cookies()
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+  const supabase = createServerComponentClient({ cookies: () => cookieStore })
 
   const {
     data: { user: authUser },
