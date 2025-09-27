@@ -1,18 +1,23 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client"
 
-// In a serverless environment like Vercel, it's important to instantiate a single
-// PrismaClient instance and re-use it across function invocations.
-// This prevents the application from exhausting the database connection limit.
-
-// Add prisma to the NodeJS global type
+// This declaration extends the global namespace to include a 'prisma' property.
 declare global {
-  var prisma: PrismaClient | undefined;
+  // eslint-disable-next-line no-var
+  var prisma: PrismaClient | undefined
 }
 
-const prisma = global.prisma || new PrismaClient();
+// Instantiate the PrismaClient.
+// In development, we store the client on the 'globalThis' object.
+// This prevents hot-reloading from creating new PrismaClient instances on every change,
+// which would quickly exhaust database connections.
+// In production, a new client is created.
+export const prisma =
+  global.prisma ||
+  new PrismaClient({
+    // Optional: log database queries for debugging purposes
+    // log: ["query", "info", "warn", "error"],
+  })
 
-if (process.env.NODE_ENV === 'development') {
-  global.prisma = prisma;
+if (process.env.NODE_ENV !== "production") {
+  global.prisma = prisma
 }
-
-export default prisma;

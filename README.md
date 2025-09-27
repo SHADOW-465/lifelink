@@ -1,70 +1,85 @@
-# Blood donation platform
+# LifeLink - Blood Donation Platform
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+LifeLink is a modern, mobile-first web application designed to connect blood donors with recipients in real-time. Built with Next.js, Supabase, and Prisma, it provides a seamless and secure platform for managing blood requests, donations, and communication.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/seiyonixai-5163s-projects/v0-blood-donation-platform)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/Vg7vN707Sje)
+This project was developed as a high-fidelity prototype, with a user interface strictly designed to look and feel like a native mobile application.
 
-## Overview
+## Features
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+- **Unified User Profile:** A single account for both donors and recipients.
+- **Multi-Step Onboarding:** A comprehensive flow including profile setup and a medical screening questionnaire.
+- **Dashboard:** A central hub to view your profile summary, donation eligibility, and active blood requests.
+- **Interactive Map:** A Google Maps interface to visually locate nearby blood requests, with filtering by blood type.
+- **End-to-End Donation Flow:** Create requests, find donors, and securely confirm donations using an OTP verification system.
+- **In-App Messaging:** Securely communicate with other users directly within the application.
+
+## Tech Stack
+
+- **Framework:** Next.js (App Router)
+- **Database:** Supabase (PostgreSQL)
+- **ORM:** Prisma
+- **Authentication:** Supabase Auth
+- **Styling:** Tailwind CSS with shadcn/ui
+- **Mapping:** Google Maps API
+
+---
+
+## Environment Variables Setup
+
+To run this project locally, you need to set up the following environment variables. Create a `.env` file in the root of the project and add the following key-value pairs.
+
+You can find these values in your Supabase project's API settings dashboard.
+
+-   `DATABASE_URL`: The **pooled** connection string for your Supabase database. This is used by the Prisma client for general query operations. It must include the `pgbouncer=true` parameter.
+    -   Example: `postgres://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true`
+
+-   `DATABASE_URL_NON_POOLING`: The **direct** connection string for your Supabase database. This is required by Prisma for running migrations.
+    -   Example: `postgres://postgres.[ref]:[password]@aws-0-ap-southeast-1.db.supabase.co:5432/postgres`
+
+-   `NEXT_PUBLIC_SUPABASE_URL`: The public URL for your Supabase project.
+    -   Example: `https://[ref].supabase.co`
+
+-   `NEXT_PUBLIC_SUPABASE_ANON_KEY`: The public anonymous key for your Supabase project.
+
+-   `SUPABASE_SERVICE_ROLE_KEY`: The secret "service_role" key for your Supabase project. This is used for admin-level operations on the backend.
+
+-   `SUPABASE_JWT_SECRET`: The JWT Secret from your Supabase project's JWT settings.
+
+-   `GOOGLE_MAPS_API_KEY`: Your API key for the Google Maps JavaScript API. This is required for the interactive map feature.
+
+---
 
 ## Getting Started
 
-To run this project locally, you need to set up your environment variables.
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository-url>
+    cd <repository-name>
+    ```
 
-### 1. Create Environment File
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-Copy the example file `.env.example` to a new file named `.env`. This file will hold your secret credentials and is ignored by Git.
+3.  **Set up environment variables:**
+    Create a `.env` file in the project root and populate it with the variables listed above.
 
-```bash
-cp .env.example .env
-```
+4.  **Apply database schema:**
+    Push the Prisma schema to your Supabase database. This will create all the necessary tables.
+    ```bash
+    npx prisma db push
+    ```
 
-### 2. Set Database URL
+5.  **Apply database triggers:**
+    Push the Supabase-specific migrations to set up functions and triggers (e.g., for creating user profiles on signup).
+    ```bash
+    npx supabase db push
+    ```
 
-You need to add your Supabase database connection string to the `.env` file.
+6.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
 
-- Log in to your [Supabase account](https://supabase.com/).
-- Navigate to your project's settings: **Project Settings > Database**.
-- Under the **Connection string** section, find the URI for the **Connection Pooler**. This is the recommended URL for serverless environments like Vercel as it prevents connection exhaustion.
-- Paste this full connection string as the value for `DATABASE_URL` in your `.env` file.
-
-Your `.env` file should look like this:
-```
-DATABASE_URL="postgres://postgres.pbqshvketxyflbvqpmvp:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true"
-```
-
-### 3. Install Dependencies
-
-This project uses `pnpm` for package management.
-
-```bash
-pnpm install
-```
-
-### 4. Run the Development Server
-
-```bash
-pnpm run dev
-```
-
-## Deployment
-
-Your project is live at:
-
-**[https://vercel.com/seiyonixai-5163s-projects/v0-blood-donation-platform](https://vercel.com/seiyonixai-5163s-projects/v0-blood-donation-platform)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/projects/Vg7vN707Sje](https://v0.app/chat/projects/Vg7vN707Sje)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

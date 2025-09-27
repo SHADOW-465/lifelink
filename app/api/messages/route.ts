@@ -1,92 +1,93 @@
-import { createClient } from "@/lib/supabase/server"
-import { type NextRequest, NextResponse } from "next/server"
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import { NextResponse, type NextRequest } from "next/server"
+import { z } from "zod"
+import { prisma } from "@/lib/prisma"
 
-export async function POST(request: NextRequest) {
+/**
+ * GET - Fetches the message history for a specific conversation.
+ */
+export async function GET(request: NextRequest) {
+  const cookieStore = cookies()
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+  const { searchParams } = new URL(request.url)
+  const otherUserId = searchParams.get("otherUserId")
+
+  if (!otherUserId) {
+    return new NextResponse("otherUserId is required", { status: 400 })
+  }
+
   try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
+      return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const body = await request.json()
-    const { request_id, receiver_id, message_text, message_type = "text" } = body
+    // Fetch the other user's basic info
+    const otherUser = await prisma.user.findUnique({
+      where: { id: otherUserId },
+      select: { id: true, firstName: true },
+    })
 
-    if (!request_id || !receiver_id || !message_text) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (!otherUser) {
+      return new NextResponse("Conversation partner not found", { status: 404 })
     }
 
-    // Insert message
-    const { data: message, error } = await supabase
-      .from("messages")
-      .insert({
-        request_id,
-        sender_id: user.id,
-        receiver_id,
-        message_text,
-        message_type,
-      })
-      .select()
-      .single()
+    // Fetch the messages between the two users
+    const messages = await prisma.message.findMany({
+      where: {
+        OR: [
+          { senderId: authUser.id, recipientId: otherUserId },
+          { senderId: otherUserId, recipientId: authUser.id },
+        ],
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    })
 
-    if (error) {
-      throw error
-    }
-
-    return NextResponse.json({ message })
+    return NextResponse.json({ messages, otherUser })
   } catch (error) {
-    console.error("Error sending message:", error)
-    return NextResponse.json({ error: "Failed to send message" }, { status: 500 })
+    console.error("Error fetching messages:", error)
+    return new NextResponse("Internal Server Error", { status: 500 })
   }
 }
 
-export async function GET(request: NextRequest) {
+/**
+ * POST - Sends a new message.
+ */
+const sendMessageSchema = z.object({
+  recipientId: z.string().uuid(),
+  content: z.string().min(1, "Message content cannot be empty."),
+})
+
+export async function POST(request: Request) {
+  const cookieStore = cookies()
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+
   try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
+      return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const requestId = searchParams.get("request_id")
-    const otherUserId = searchParams.get("other_user_id")
+    const json = await request.json()
+    const body = sendMessageSchema.parse(json)
 
-    if (!requestId || !otherUserId) {
-      return NextResponse.json({ error: "Missing required parameters" }, { status: 400 })
-    }
+    const newMessage = await prisma.message.create({
+      data: {
+        senderId: authUser.id,
+        recipientId: body.recipientId,
+        content: body.content,
+      },
+    })
 
-    // Get messages between current user and other user for this request
-    const { data: messages, error } = await supabase
-      .from("messages")
-      .select(`
-        *,
-        sender:profiles!messages_sender_id_fkey(full_name, profile_image_url),
-        receiver:profiles!messages_receiver_id_fkey(full_name, profile_image_url)
-      `)
-      .eq("request_id", requestId)
-      .or(
-        `and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`,
-      )
-      .order("created_at", { ascending: true })
-
-    if (error) {
-      throw error
-    }
-
-    return NextResponse.json({ messages })
+    return NextResponse.json(newMessage)
   } catch (error) {
-    console.error("Error fetching messages:", error)
-    return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 })
+    console.error("Error sending message:", error)
+    if (error instanceof z.ZodError) {
+      return new NextResponse(JSON.stringify(error.errors), { status: 400 })
+    }
+    return new NextResponse("Internal Server Error", { status: 500 })
   }
 }

@@ -1,0 +1,156 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_NON_POOLING")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- Enums ---
+
+enum BloodType {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
+
+enum RequestStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum UrgencyLevel {
+  NORMAL
+  URGENT
+  CRITICAL
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+}
+
+// --- Models ---
+
+/// Represents a user in the system, linked to Supabase Auth.
+/// A user can be a donor, a recipient, or both.
+model User {
+  id                      String      @id @default(uuid()) // Links to Supabase auth.users.id
+  email                   String      @unique
+  firstName               String?
+  lastName                String?
+  bloodType               BloodType?
+  latitude                Float?
+  longitude               Float?
+  address                 String?
+  phone                   String?     @unique
+  isAvailable             Boolean     @default(true) // For donors
+  lastDonation            DateTime?
+  pushNotificationToken   String?     @unique
+
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+
+  // Relationships
+  medicalHistory          MedicalHistory?
+  bloodRequests           BloodRequest[] // Requests made by this user
+  donations               Donation[]     // Donations made by this user
+  sentMessages            Message[]      @relation("SentMessages")
+  receivedMessages        Message[]      @relation("ReceivedMessages")
+  donationVerifications   DonationVerification[] // Verifications this user (recipient) initiated
+}
+
+/// Stores the user's answers to the medical screening questionnaire.
+model MedicalHistory {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  answers   Json     // Storing questionnaire answers as a JSON object
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// A request for blood made by a recipient user.
+model BloodRequest {
+  id              String        @id @default(cuid())
+  requesterId     String
+  requester       User          @relation(fields: [requesterId], references: [id])
+
+  bloodType       BloodType
+  unitsRequired   Int
+  unitsFulfilled  Int           @default(0)
+
+  latitude        Float         // Location of the request
+  longitude       Float
+
+  urgency         UrgencyLevel  @default(NORMAL)
+  status          RequestStatus @default(OPEN)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relationships
+  donations       Donation[]
+}
+
+/// Represents a single, completed donation transaction from a donor to a blood request.
+model Donation {
+  id              String      @id @default(cuid())
+  donorId         String
+  donor           User        @relation(fields: [donorId], references: [id])
+
+  bloodRequestId  String
+  bloodRequest    BloodRequest @relation(fields: [bloodRequestId], references: [id])
+
+  unitsDonated    Int
+  donationDate    DateTime    @default(now())
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relationships
+  verification    DonationVerification?
+}
+
+/// Handles the OTP verification for a specific donation.
+model DonationVerification {
+  id              String             @id @default(cuid())
+  donationId      String             @unique
+  donation        Donation           @relation(fields: [donationId], references: [id])
+
+  recipientId     String             // The recipient who confirms the donation
+  recipient       User               @relation(fields: [recipientId], references: [id])
+
+  otp             String
+  status          VerificationStatus @default(PENDING)
+  expiresAt       DateTime
+
+  createdAt       DateTime           @default(now())
+}
+
+/// A message between two users, typically related to a blood request.
+model Message {
+  id          String   @id @default(cuid())
+
+  senderId    String
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+
+  recipientId String
+  recipient   User     @relation("ReceivedMessages", fields: [recipientId], references: [id])
+
+  content     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
