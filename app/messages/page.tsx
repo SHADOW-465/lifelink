@@ -11,7 +11,7 @@ import { formatDistanceToNow } from "date-fns"
 
 export default async function MessagesPage() {
   const cookieStore = cookies()
-  const supabase = createServerComponentClient({ cookies: () => cookieStore })
+  const supabase = createServerComponentClient({ cookies: cookieStore })
 
   const {
     data: { user: authUser },

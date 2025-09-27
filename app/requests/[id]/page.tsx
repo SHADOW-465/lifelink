@@ -17,7 +17,7 @@ interface PageProps {
 export default async function RequestDetailsPage({ params }: PageProps) {
   const { id } = params
   const cookieStore = cookies()
-  const supabase = createServerComponentClient({ cookies: () => cookieStore })
+  const supabase = createServerComponentClient({ cookies: cookieStore })
 
   const {
     data: { user: authUser },
