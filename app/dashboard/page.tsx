@@ -27,7 +27,7 @@ const getEligibilityStatus = (lastDonation: Date | null) => {
 
 export default async function DashboardPage() {
   const cookieStore = cookies()
-  const supabase = createServerComponentClient({ cookies: () => cookieStore })
+  const supabase = createServerComponentClient({ cookies: cookieStore })
 
   const {
     data: { user: authUser },
