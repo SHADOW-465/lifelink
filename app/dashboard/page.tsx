@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { createRouteHandlerClient } from "@supabase/ssr"
+import { createServerComponentClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -27,7 +27,7 @@ const getEligibilityStatus = (lastDonation: Date | null) => {
 
 export default async function DashboardPage() {
   const cookieStore = cookies()
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+  const supabase = createServerComponentClient({ cookies: () => cookieStore })
 
   const {
     data: { user: authUser },
